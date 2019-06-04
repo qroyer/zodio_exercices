@@ -24,6 +24,6 @@ echo "$M2SETUP_BASE_URL"
     --use-rewrites=1
 
 /app/bin/magento deploy:mode:set developer
-/app/bin/magento sampledata:deploy
+php -d memory-limit=2G /app/bin/magento sampledata:deploy
 /app/bin/magento set:up
 /app/bin/magento cache:clean
