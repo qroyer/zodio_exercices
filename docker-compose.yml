@@ -1,0 +1,84 @@
+version: "2"
+services:
+  php:
+    image: docker.adexos.fr/adexos/php7.2-fpm
+    links:
+      - db
+    working_dir: /app
+    volumes_from:
+      - appdata
+    env_file:
+      - ./docker/envs/magento.env
+    volumes:
+      - ./docker/scripts/install.sh:/docker/install.sh
+      - ./docker/config/php/php.ini:/usr/local/etc/php/conf.d/php.ini:ro
+      - ./docker/config/php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug-20.ini:ro
+    networks:
+      - default
+
+  httpd-formation:
+    image: httpd:2.4
+    depends_on:
+      - php
+    ports:
+      - 80:80
+    volumes_from:
+      - appdata
+    volumes:
+      - ./docker/config/httpd/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./docker/config/httpd/vhost.conf:/usr/local/apache2/conf/vhost.conf:ro
+    networks:
+      - default
+
+  node:
+    image: docker.adexos.fr/adexos/node10
+    volumes_from:
+      - appdata
+    working_dir: /app
+
+#  varnish:
+#    image: emgag/varnish:5
+#    links:
+#      - httpd-formation
+#    networks:
+#      - default
+#    ports:
+#      - 80:80
+#      - 6082:6082
+#    volumes:
+#      - ./docker/varnish/default.vcl:/etc/varnish/default.vcl
+#    environment:
+#      VARNISH_MANAGEMENT_LISTEN: 0.0.0.0:6082
+
+  db:
+    image: mysql:5.7
+    ports:
+      - 3306
+    volumes_from:
+      - dbdata
+    env_file:
+      - ./docker/envs/mysql.env
+    volumes:
+      - ./docker/config/mysql/mysql-secure-file.cnf:/etc/mysql/conf.d/mysql-secure-file.cnf
+
+  pma-formation:
+    image: phpmyadmin/phpmyadmin:latest
+    ports:
+      - 8080:80
+    links:
+      - db
+    networks:
+      - default
+
+  appdata:
+    image: tianon/true
+    volumes:
+      - ./htdocs:/app
+
+  dbdata:
+    image: tianon/true
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+
+networks:
+  default:
